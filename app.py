@@ -1,14 +1,18 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="TALK ENTERPRISE", page_icon="💬", layout="centered")
+st.set_page_config(
+    page_title="TALK ENTERPRISE", 
+    page_icon="💬",
+    layout="centered"
+)
 
 # --- CSS ---
 st.markdown("""
     <style>
-    html, body, [class*="css"]  {
+    html, body, [class*="css"] {
         font-family: 'Avenir Next', Arial, sans-serif !important;
-        background: #fff;
+        background: #f5f6fa !important;
         color: #111;
     }
     .talk-title {
@@ -18,69 +22,91 @@ st.markdown("""
         letter-spacing: 0.25em;
         font-weight: 200 !important;
         text-align: center;
-        margin-bottom: 1.2em;
+        margin-bottom: 0.7em;
         margin-top: 0.6em;
     }
-    .talk-label {
-        font-size: 0.82rem;
-        color: #666;
-        font-family: 'Avenir Next', Arial, sans-serif !important;
-        text-transform: uppercase;
-        letter-spacing: 0.18em;
-        font-weight: 200 !important;
-        margin-left: 6px;
-        margin-bottom: 2px;
-        margin-top: 12px;
-        display: block;
-    }
-    .stChatMessage {
-        background: #fafbfc;
-        border-radius: 18px;
-        padding: 12px 16px;
-        margin: 8px 0;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        font-family: 'Avenir Next', Arial, sans-serif !important;
-        font-weight: 200 !important;
-        letter-spacing: 0.03em;
-    }
-    .user-msg {
-        background: #e6f0fa;
-        margin-left: 35%;
-    }
-    .jessica-msg {
-        background: #f5edfa;
-        margin-right: 35%;
-    }
-    .history-scroll {
-        max-height: 180px;
+    .chat-history {
+        max-height: 350px;
         overflow-y: auto;
-        border: 1px solid #f0f0f0;
-        border-radius: 12px;
-        margin-bottom: 16px;
-        padding: 8px 0 8px 0;
-        background: #fdfdfd;
-        box-shadow: none;
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 2px 12px 0 rgba(120, 120, 130, 0.10);
+        padding: 18px 10px 18px 10px;
+        margin-bottom: 18px;
+        border: 1.3px solid #ececec;
+    }
+    .bubble {
+        display: flex;
+        flex-direction: column;
+        max-width: 67%;
+        margin-bottom: 8px;
+        font-family: 'Avenir Next', Arial, sans-serif !important;
+        font-size: 1.05em;
+        word-break: break-word;
+    }
+    .bubble.user {
+        align-self: flex-end;
+        background: linear-gradient(135deg, #e5f0fd 0%, #d1e3ff 100%);
+        color: #222;
+        border-radius: 20px 20px 8px 20px;
+        box-shadow: 0 1px 4px 0 rgba(100,140,255,0.08);
+        padding: 9px 15px 9px 15px;
+        margin-right: 4px;
+    }
+    .bubble.jessica {
+        align-self: flex-start;
+        background: linear-gradient(135deg, #f7eefc 0%, #f4f5fa 100%);
+        color: #333;
+        border-radius: 20px 20px 20px 8px;
+        box-shadow: 0 1px 4px 0 rgba(170,130,255,0.08);
+        padding: 9px 15px 9px 15px;
+        margin-left: 4px;
+    }
+    .bubble-label {
+        font-size: 0.78em;
+        color: #888a;
+        margin-bottom: 2px;
+        letter-spacing: 0.10em;
+        text-align: left;
+    }
+    .bubble.user .bubble-label {
+        text-align: right;
+        color: #6d7bbd;
+    }
+    .bubble.jessica .bubble-label {
+        color: #ae8fc7;
+    }
+    .input-area {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 1px 6px 0 rgba(120, 120, 130, 0.13);
+        padding: 10px 14px;
+        margin-bottom: 5px;
+        border: 1.2px solid #dbeafe;
+        display: flex;
+        align-items: center;
     }
     .stTextInput > div > div > input {
-        border-radius: 12px !important;
-        border: 1.2px solid #dbeafe !important;
-        background: #fff !important;
-        font-size: 1.05em;
-        padding: 8px 10px !important;
-        margin-bottom: 0.3em;
+        background: transparent !important;
+        border: none !important;
+        padding: 6px 4px !important;
+        font-size: 1.07em;
+        color: #333 !important;
+        margin-bottom: 0 !important;
         box-shadow: none !important;
+        outline: none !important;
     }
     .reset-btn {
         background: transparent;
-        color: #A0A0A0;
+        color: #a5a5b6;
         border: none;
-        font-size: 0.92em;
-        margin-left: 6px;
-        margin-top: 2px;
-        padding: 0 8px;
+        font-size: 1em;
+        margin-left: 0.4em;
+        margin-top: 0.13em;
+        padding: 4px 11px;
         cursor: pointer;
-        transition: color 0.2s;
         border-radius: 8px;
+        transition: background 0.18s, color 0.18s;
     }
     .reset-btn:hover {
         color: #7b61ff;
@@ -94,41 +120,49 @@ st.markdown('<div class="talk-title">T A L K &nbsp; E N T E R P R I S E</div>', 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-MAX_PRIMARY = 3  # Nombre d'interactions primaires visibles "en gros"
+# --- BOUTON RESET ---
+def reset_chat():
+    st.session_state.messages = []
 
-# --- HISTORIQUE SCROLLABLE ---
-st.markdown('<div class="talk-label">Historique</div>', unsafe_allow_html=True)
-with st.container():
-    st.markdown('<div class="history-scroll">', unsafe_allow_html=True)
-    for m in st.session_state.messages:
-        is_user = (m["role"] == "Vous")
-        role_label = "VOUS" if is_user else "JESSICA"
-        msg_class = "user-msg" if is_user else "jessica-msg"
-        st.markdown(
-            f'<div class="stChatMessage {msg_class}" style="margin-left:0;margin-right:0;"><b style="font-size:0.82em;letter-spacing:0.17em;">{role_label}</b><br>{m["content"]}</div>',
-            unsafe_allow_html=True
-        )
-    st.markdown('</div>', unsafe_allow_html=True)
+st.markdown(
+    '<button class="reset-btn" onclick="window.dispatchEvent(new CustomEvent(\'reset_chat\'));">Reset</button>',
+    unsafe_allow_html=True,
+)
+st.session_state['do_reset'] = st.session_state.get('do_reset', False)
+if st.session_state['do_reset']:
+    reset_chat()
+    st.session_state['do_reset'] = False
 
-# --- PRIMARY (3 dernières interactions) ---
-st.markdown('<div class="talk-label">Derniers échanges</div>', unsafe_allow_html=True)
-with st.container():
-    for m in st.session_state.messages[-MAX_PRIMARY:]:
-        is_user = (m["role"] == "Vous")
-        role_label = "VOUS" if is_user else "JESSICA"
-        msg_class = "user-msg" if is_user else "jessica-msg"
-        st.markdown(
-            f'<div class="stChatMessage {msg_class}"><b style="font-size:0.82em;letter-spacing:0.17em;">{role_label}</b><br>{m["content"]}</div>',
-            unsafe_allow_html=True
-        )
+# Petite astuce JS pour le bouton reset (Streamlit ne supporte pas nativement le onclick qui touche Python)
+st.markdown("""
+    <script>
+    window.addEventListener('reset_chat', function() {
+        window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:setComponentValue', value: true, key: 'do_reset'}, '*');
+    });
+    </script>
+""", unsafe_allow_html=True)
 
-# --- INPUT ---
-st.markdown('<span class="talk-label">TAPER VOTRE MESSAGE</span>', unsafe_allow_html=True)
+# --- AFFICHAGE DU CHAT AVEC SCROLL ---
+st.markdown('<div class="chat-history">', unsafe_allow_html=True)
+for m in st.session_state.messages:
+    role = m["role"]
+    content = m["content"]
+    if role.lower() == "vous":
+        bubble_class = "bubble user"
+        label = "VOUS"
+    else:
+        bubble_class = "bubble jessica"
+        label = "JESSICA"
+    st.markdown(
+        f'<div class="{bubble_class}"><div class="bubble-label">{label}</div>{content}</div>',
+        unsafe_allow_html=True
+    )
+st.markdown('</div>', unsafe_allow_html=True)
 
+# --- INPUT AREA ---
 def send_message():
     user_input = st.session_state.input_text.strip()
     if user_input:
-        # Ajout message utilisateur D'ABORD
         st.session_state.messages.append({"role": "Vous", "content": user_input})
         # Envoi webhook
         webhook_url = "https://leroux.app.n8n.cloud/webhook/dd642072-9735-4406-90c7-5a7a8a7ab9ea"
@@ -144,7 +178,7 @@ def send_message():
         st.session_state.messages.append({"role": "Jessica", "content": reply})
         st.session_state.input_text = ""
 
-# Champ texte sans bouton Send
+st.markdown('<div class="input-area">', unsafe_allow_html=True)
 st.text_input(
     "",
     value="",
@@ -152,9 +186,4 @@ st.text_input(
     label_visibility="collapsed",
     on_change=send_message
 )
-
-# --- RESET DISCRET ---
-st.markdown(
-    '<button class="reset-btn" onclick="window.location.reload()">Reset</button>',
-    unsafe_allow_html=True,
-)
+st.markdown('</div>', unsafe_allow_html=True)
