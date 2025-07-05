@@ -1,3 +1,6 @@
+
+
+
 import streamlit as st
 import requests
 
@@ -49,3 +52,32 @@ def send_and_clear():
 
 # Zone de texte, reliée au callback
 st.text_input("", key="input_text", label_visibility="collapsed", on_change=send_and_clear)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
