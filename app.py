@@ -35,7 +35,7 @@ body, html, [class*="css"] {
     flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
-    gap: 2.1em;
+    gap: 1.4em;
     margin-bottom: 1.2em;
     padding-bottom: 0.5em;
     padding-left: 0.1em;
@@ -55,10 +55,10 @@ body, html, [class*="css"] {
     background: #fff;
     border-radius: 24px;
     box-shadow: 0 4px 24px 0 rgba(30,30,68,0.08), 0 1.5px 4px #ececf3;
-    padding: 24px 28px 22px 28px;
-    min-width: 320px;
-    max-width: 370px;
-    min-height: 160px;
+    padding: 22px 26px 18px 26px;
+    min-width: 285px;
+    max-width: 320px;
+    min-height: 150px;
     border: 1px solid #f2f2f6;
     display: flex;
     flex-direction: column;
@@ -76,18 +76,19 @@ body, html, [class*="css"] {
     margin-bottom: 0.11em;
 }
 .result-siren {
-    font-size: 1.17em;
+    font-size: 1.11em;
     font-weight: 700;
     color: #7b61ff;
     letter-spacing: 0.11em;
     text-transform: uppercase;
+    font-family: 'Avenir Next', Arial, sans-serif !important;
 }
 .result-index {
     font-family: 'Avenir Next', Arial, sans-serif !important;
-    font-size: 0.97em;
+    font-size: 0.99em;
     color: #b6b6c2;
     font-weight: 200;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
     text-align: right;
     margin-left: 1em;
     white-space: nowrap;
@@ -95,26 +96,28 @@ body, html, [class*="css"] {
     user-select: none;
 }
 .result-title {
-    font-size: 1.13em;
+    font-size: 1.08em;
     font-weight: 600;
     color: #2d2d52;
-    margin-bottom: 0.16em;
+    margin-bottom: 0.13em;
     text-transform: uppercase;
     letter-spacing: 0.07em;
+    font-family: 'Avenir Next', Arial, sans-serif !important;
 }
 .result-label {
-    font-size: 0.88em;
+    font-size: 0.85em;
     color: #7b7b98;
     font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin-right: 0.7em;
     display: inline-block;
-    min-width: 84px;
+    min-width: 78px;
     vertical-align: top;
+    font-family: 'Avenir Next', Arial, sans-serif !important;
 }
 .result-value {
-    font-size: 1.06em;
+    font-size: 1.02em;
     color: #222;
     font-weight: 400;
     letter-spacing: 0.02em;
@@ -122,21 +125,32 @@ body, html, [class*="css"] {
     vertical-align: top;
     word-break: break-word;
     white-space: normal !important;
-    max-width: 220px;
+    max-width: 180px;
+    font-family: 'Avenir Next', Arial, sans-serif !important;
 }
 .result-line {
-    margin-bottom: 0.24em;
+    margin-bottom: 0.18em;
     display: flex;
     flex-direction: row;
     align-items: baseline;
 }
+.stTextInput>div>input {
+    font-family: 'Avenir Next', Arial, sans-serif !important;
+    font-size: 1.07em;
+    font-weight: 200 !important;
+    color: #7b7b98 !important;
+    background: #f9f9fb !important;
+    border-radius: 18px !important;
+    border: 1.2px solid #e4e4f5 !important;
+    padding: 0.7em 1.1em !important;
+}
 @media (max-width: 1100px) {
-    .cards-row-scroll { gap: 1.1em;}
-    .result-card {min-width: 220px; max-width: 99vw;}
+    .cards-row-scroll { gap: 1em;}
+    .result-card {min-width: 180px; max-width: 98vw;}
 }
 @media (max-width: 768px) {
-    .cards-row-scroll { gap: 0.8em;}
-    .result-card {min-width: 94vw; max-width: 99vw;}
+    .cards-row-scroll { gap: 0.7em;}
+    .result-card {min-width: 89vw; max-width: 99vw;}
 }
 </style>
 """, unsafe_allow_html=True)
@@ -207,7 +221,6 @@ if st.session_state.total_results:
         unsafe_allow_html=True
     )
 
-# Scroll horizontal, "Résultat N" aligné à droite du SIREN
 if st.session_state.results:
     cards_html = '<div class="cards-row-scroll">'
     for idx, info in enumerate(st.session_state.results):
