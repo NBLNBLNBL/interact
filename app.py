@@ -1,10 +1,9 @@
 import streamlit as st
 import requests
-import json
 
 st.set_page_config(page_title="TALKENTREPRISE", page_icon="💬", layout="centered")
 
-# Apple-style CSS pour vignettes en ligne, centrées, responsive
+# Apple-style CSS pour vignettes en ligne, larges, alignées, TotalResult discret
 st.markdown("""
 <style>
 body, html, [class*="css"] {
@@ -20,21 +19,30 @@ body, html, [class*="css"] {
     margin-top: 0.9em;
     text-transform: uppercase;
 }
+.totalresult-text {
+    font-family: 'Avenir Next', Arial, sans-serif !important;
+    font-size: 0.97em;
+    font-weight: 200;
+    color: #b6b6c2;
+    letter-spacing: 0.07em;
+    margin-bottom: 1.0em;
+    text-align: center;
+}
 .results-row {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 1.5em;
+    gap: 2.1em;
     margin-bottom: 1.2em;
 }
 .result-card {
     background: #f9f9fb;
-    border-radius: 20px;
+    border-radius: 24px;
     box-shadow: 0 4px 24px 0 rgba(30,30,68,0.08), 0 1.5px 4px #ececf3;
-    padding: 22px 26px 18px 26px;
-    min-width: 235px;
-    max-width: 270px;
-    min-height: 220px;
+    padding: 30px 34px 26px 34px;
+    min-width: 320px;
+    max-width: 380px;
+    min-height: 180px;
     border: 1px solid #f2f2f6;
     display: flex;
     flex-direction: column;
@@ -42,49 +50,55 @@ body, html, [class*="css"] {
     justify-content: flex-start;
 }
 .result-siren {
-    font-size: 1.15em;
+    font-size: 1.17em;
     font-weight: 700;
     color: #7b61ff;
-    letter-spacing: 0.09em;
-    margin-bottom: 0.11em;
+    letter-spacing: 0.11em;
+    margin-bottom: 0.13em;
     margin-top: 0.1em;
     text-transform: uppercase;
 }
 .result-title {
-    font-size: 1.09em;
+    font-size: 1.13em;
     font-weight: 600;
     color: #2d2d52;
-    margin-bottom: 0.18em;
+    margin-bottom: 0.16em;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
 }
 .result-label {
-    font-size: 0.83em;
+    font-size: 0.88em;
     color: #7b7b98;
     font-weight: 400;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     margin-right: 0.7em;
     display: inline-block;
-    min-width: 70px;
+    min-width: 84px;
+    vertical-align: top;
 }
 .result-value {
-    font-size: 1em;
+    font-size: 1.06em;
     color: #222;
     font-weight: 400;
     letter-spacing: 0.02em;
     display: inline-block;
+    vertical-align: top;
+    white-space: nowrap;
 }
 .result-line {
-    margin-bottom: 0.36em;
+    margin-bottom: 0.31em;
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
 }
-@media (max-width: 1000px) {
-    .results-row { gap: 1em;}
-    .result-card {min-width: 185px; max-width: 98vw;}
+@media (max-width: 1100px) {
+    .results-row { gap: 1.1em;}
+    .result-card {min-width: 260px; max-width: 99vw;}
 }
 @media (max-width: 768px) {
     .results-row { flex-wrap: wrap; gap: 0.8em;}
-    .result-card {min-width: 97vw; max-width: 98vw;}
+    .result-card {min-width: 96vw; max-width: 99vw;}
 }
 </style>
 """, unsafe_allow_html=True)
@@ -93,36 +107,28 @@ st.markdown('<div class="titre">TALKENTREPRISE</div>', unsafe_allow_html=True)
 
 if "results" not in st.session_state:
     st.session_state.results = []
+if "total_results" not in st.session_state:
+    st.session_state.total_results = 0
 
 def extract_info(result):
     siren = result.get("siren", "")
     nom = result.get("nom_complet", "") or result.get("nom_raison_sociale", "")
     categorie = result.get("categorie_entreprise", "")
-    activite = result.get("activite_principale", "")
     siege = result.get("siege", {})
     adresse = siege.get("geo_adresse") or siege.get("adresse", "")
-    cp = siege.get("code_postal", "")
-    ville = siege.get("libelle_commune", "")
     dirigeants = result.get("dirigeants", [])
     dirigeant = ""
     if dirigeants:
         d = dirigeants[0]
         dirigeant = (d.get("denomination") or d.get("nom") or "") + (" (" + d.get("qualite") + ")" if d.get("qualite") else "")
-    siret = siege.get("siret", "")
     date_creation = result.get("date_creation", "")
-    effectif = siege.get("tranche_effectif_salarie") or result.get("tranche_effectif_salarie") or ""
     return {
         "siren": siren,
         "nom": nom,
         "categorie": categorie,
-        "activite": activite,
         "adresse": adresse,
-        "cp": cp,
-        "ville": ville,
         "dirigeant": dirigeant,
-        "siret": siret,
         "date_creation": date_creation,
-        "effectif": effectif
     }
 
 def send_and_clear():
@@ -133,23 +139,37 @@ def send_and_clear():
             resp = requests.post(webhook_url, json={"query": user_input}, timeout=15)
             try:
                 data = resp.json()
-                # Compatible avec une réponse enveloppée (cf. ton exemple)
+                # Prend en compte le format enveloppé de ta réponse
                 if isinstance(data, list) and "results" in data[0]:
                     res_list = data[0]["results"]
+                    total = data[0].get("total_results", len(res_list))
                 elif "results" in data:
                     res_list = data["results"]
+                    total = data.get("total_results", len(res_list))
                 else:
                     res_list = []
-                st.session_state.results = [extract_info(r) for r in res_list]
+                    total = 0
+                # Toujours max 5 résultats affichés
+                st.session_state.results = [extract_info(r) for r in res_list[:5]]
+                st.session_state.total_results = total
             except Exception:
                 st.session_state.results = []
+                st.session_state.total_results = 0
         except Exception:
             st.session_state.results = []
+            st.session_state.total_results = 0
     st.session_state.input_text = ""
 
 st.text_input("", key="input_text", label_visibility="collapsed", on_change=send_and_clear)
 
-# Affichage des résultats en ligne, flex, centrés
+# Texte TotalResult très discret
+if st.session_state.total_results:
+    st.markdown(
+        f'<div class="totalresult-text">TotalResult {st.session_state.total_results}</div>',
+        unsafe_allow_html=True
+    )
+
+# Affichage des résultats en ligne, flex, centrés, adresse sur une seule ligne, aucune balise visible
 if st.session_state.results:
     cards_html = '<div class="results-row">'
     for info in st.session_state.results:
@@ -159,7 +179,6 @@ if st.session_state.results:
             <div class="result-title">{info['nom']}</div>
             <div class="result-line"><span class="result-label">Dirigeant</span><span class="result-value">{info['dirigeant']}</span></div>
             <div class="result-line"><span class="result-label">Adresse</span><span class="result-value">{info['adresse']}</span></div>
-            <div class="result-line"><span class="result-label">Activité</span><span class="result-value">{info['activite']}</span></div>
             <div class="result-line"><span class="result-label">Catégorie</span><span class="result-value">{info['categorie']}</span></div>
             <div class="result-line"><span class="result-label">Date création</span><span class="result-value">{info['date_creation']}</span></div>
         </div>
