@@ -30,12 +30,33 @@ body, html, [class*="css"] {
     margin-bottom: 1.0em;
     text-align: center;
 }
+.cards-row-scroll {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 2.1em;
+    margin-bottom: 1.2em;
+    padding-bottom: 0.5em;
+    padding-left: 0.1em;
+    padding-right: 0.1em;
+    scrollbar-width: thin;
+    scrollbar-color: #ececf3 #f9f9fb;
+}
+.cards-row-scroll::-webkit-scrollbar {
+    height: 8px;
+    background: #f9f9fb;
+}
+.cards-row-scroll::-webkit-scrollbar-thumb {
+    background: #ececf3;
+    border-radius: 8px;
+}
 .result-card {
     background: #fff;
     border-radius: 24px;
     box-shadow: 0 4px 24px 0 rgba(30,30,68,0.08), 0 1.5px 4px #ececf3;
     padding: 30px 34px 26px 34px;
-    min-width: 300px;
+    min-width: 320px;
     max-width: 370px;
     min-height: 190px;
     border: 1px solid #f2f2f6;
@@ -44,7 +65,22 @@ body, html, [class*="css"] {
     align-items: flex-start;
     justify-content: flex-start;
     word-break: break-word;
-    margin: 0.7em;
+    margin-bottom: 1em;
+    position: relative;
+}
+.result-index {
+    position: absolute;
+    top: 19px;
+    right: 28px;
+    font-family: 'Avenir Next', Arial, sans-serif !important;
+    font-size: 0.98em;
+    color: #b6b6c2;
+    font-weight: 200;
+    letter-spacing: 0.06em;
+    text-align: right;
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
 }
 .result-siren {
     font-size: 1.17em;
@@ -91,17 +127,12 @@ body, html, [class*="css"] {
     flex-direction: row;
     align-items: baseline;
 }
-.cards-row {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: stretch;
-}
 @media (max-width: 1100px) {
+    .cards-row-scroll { gap: 1.1em;}
     .result-card {min-width: 220px; max-width: 99vw;}
 }
 @media (max-width: 768px) {
-    .cards-row { flex-wrap: wrap;}
+    .cards-row-scroll { gap: 0.8em;}
     .result-card {min-width: 94vw; max-width: 99vw;}
 }
 </style>
@@ -173,12 +204,13 @@ if st.session_state.total_results:
         unsafe_allow_html=True
     )
 
-# Affichage : une carte = un seul st.markdown, toutes dans une row
+# Affichage : horizontal scroll, index discret en haut à droite de chaque carte
 if st.session_state.results:
-    st.markdown('<div class="cards-row">', unsafe_allow_html=True)
-    for info in st.session_state.results:
-        card_html = f"""
+    cards_html = '<div class="cards-row-scroll">'
+    for idx, info in enumerate(st.session_state.results):
+        cards_html += f"""
         <div class="result-card">
+            <span class="result-index">Résultat {idx+1}</span>
             <div class="result-siren">{safe_escape(info['siren'])}</div>
             <div class="result-title">{safe_escape(info['nom'])}</div>
             <div class="result-line"><span class="result-label">Dirigeant</span><span class="result-value">{safe_escape(info['dirigeant'])}</span></div>
@@ -187,5 +219,5 @@ if st.session_state.results:
             <div class="result-line"><span class="result-label">Date création</span><span class="result-value">{safe_escape(info['date_creation'])}</span></div>
         </div>
         """
-        st.markdown(card_html, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    cards_html += '</div>'
+    st.markdown(cards_html, unsafe_allow_html=True)
