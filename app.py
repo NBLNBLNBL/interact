@@ -3,7 +3,7 @@ import requests
 
 st.set_page_config(page_title="TALK ENTERPRISE", page_icon="💬", layout="centered")
 
-# CSS
+# --- CSS ---
 st.markdown("""
     <style>
     html, body, [class*="css"]  {
@@ -51,17 +51,15 @@ st.markdown("""
         background: #f5edfa;
         margin-right: 35%;
     }
-    .history-container {
-        max-height: 270px;
+    .history-scroll {
+        max-height: 180px;
         overflow-y: auto;
-        margin-bottom: 1em;
-        scroll-behavior: smooth;
-        border-radius: 14px;
-        border: 1px solid #eee;
-        background: #fff;
-        padding: 10px 0 8px 0;
-        min-height: 90px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        border: 1px solid #f0f0f0;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        padding: 8px 0 8px 0;
+        background: #fdfdfd;
+        box-shadow: none;
     }
     .stTextInput > div > div > input {
         border-radius: 12px !important;
@@ -70,6 +68,23 @@ st.markdown("""
         font-size: 1.05em;
         padding: 8px 10px !important;
         margin-bottom: 0.3em;
+        box-shadow: none !important;
+    }
+    .reset-btn {
+        background: transparent;
+        color: #A0A0A0;
+        border: none;
+        font-size: 0.92em;
+        margin-left: 6px;
+        margin-top: 2px;
+        padding: 0 8px;
+        cursor: pointer;
+        transition: color 0.2s;
+        border-radius: 8px;
+    }
+    .reset-btn:hover {
+        color: #7b61ff;
+        background: #f3f0ff;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -79,13 +94,26 @@ st.markdown('<div class="talk-title">T A L K &nbsp; E N T E R P R I S E</div>', 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-MAX_HISTORY = 3  # Nombre de messages affichés en permanence (les plus récents)
+MAX_PRIMARY = 3  # Nombre d'interactions primaires visibles "en gros"
 
-# Affichage historique dans un conteneur scrollable, mais on montre toujours les 3 derniers messages
+# --- HISTORIQUE SCROLLABLE ---
+st.markdown('<div class="talk-label">Historique</div>', unsafe_allow_html=True)
 with st.container():
-    st.markdown('<div class="history-container">', unsafe_allow_html=True)
-    # On limite l'affichage aux MAX_HISTORY derniers messages mais on garde tout l'historique en mémoire
-    for m in st.session_state.messages[-MAX_HISTORY:]:
+    st.markdown('<div class="history-scroll">', unsafe_allow_html=True)
+    for m in st.session_state.messages:
+        is_user = (m["role"] == "Vous")
+        role_label = "VOUS" if is_user else "JESSICA"
+        msg_class = "user-msg" if is_user else "jessica-msg"
+        st.markdown(
+            f'<div class="stChatMessage {msg_class}" style="margin-left:0;margin-right:0;"><b style="font-size:0.82em;letter-spacing:0.17em;">{role_label}</b><br>{m["content"]}</div>',
+            unsafe_allow_html=True
+        )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# --- PRIMARY (3 dernières interactions) ---
+st.markdown('<div class="talk-label">Derniers échanges</div>', unsafe_allow_html=True)
+with st.container():
+    for m in st.session_state.messages[-MAX_PRIMARY:]:
         is_user = (m["role"] == "Vous")
         role_label = "VOUS" if is_user else "JESSICA"
         msg_class = "user-msg" if is_user else "jessica-msg"
@@ -93,19 +121,15 @@ with st.container():
             f'<div class="stChatMessage {msg_class}"><b style="font-size:0.82em;letter-spacing:0.17em;">{role_label}</b><br>{m["content"]}</div>',
             unsafe_allow_html=True
         )
-    st.markdown('</div>', unsafe_allow_html=True)
 
-# Label
-st.markdown('<span class="talk-label">TAPEZ VOTRE MESSAGE</span>', unsafe_allow_html=True)
+# --- INPUT ---
+st.markdown('<span class="talk-label">TAPER VOTRE MESSAGE</span>', unsafe_allow_html=True)
 
-# Formulaire d'envoi
-# Plus de bouton "Send" ! On envoie uniquement avec "Enter".
 def send_message():
     user_input = st.session_state.input_text.strip()
     if user_input:
         # Ajout message utilisateur D'ABORD
         st.session_state.messages.append({"role": "Vous", "content": user_input})
-
         # Envoi webhook
         webhook_url = "https://leroux.app.n8n.cloud/webhook/dd642072-9735-4406-90c7-5a7a8a7ab9ea"
         try:
@@ -117,14 +141,11 @@ def send_message():
                 reply = resp.text
         except Exception:
             reply = "Jessica n'a pas pu recevoir votre message."
-        # Ajout réponse Jessica
         st.session_state.messages.append({"role": "Jessica", "content": reply})
-
-        # Efface le champ input
         st.session_state.input_text = ""
 
-# Champ de texte (sans bouton "Send")
-user_input = st.text_input(
+# Champ texte sans bouton Send
+st.text_input(
     "",
     value="",
     key="input_text",
@@ -132,14 +153,8 @@ user_input = st.text_input(
     on_change=send_message
 )
 
-# Optionnel : bouton pour effacer l'historique complet
-if st.button("Effacer l'historique", help="Supprime tous les messages de la session."):
-    st.session_state.messages = []
-
-# Scroll automatique vers le bas (hack Streamlit)
-st.markdown("""
-    <script>
-    var h = window.parent.document.querySelector('.main .block-container');
-    if (h) { h.scrollTop = h.scrollHeight; }
-    </script>
-""", unsafe_allow_html=True)
+# --- RESET DISCRET ---
+st.markdown(
+    '<button class="reset-btn" onclick="window.location.reload()">Reset</button>',
+    unsafe_allow_html=True,
+)
