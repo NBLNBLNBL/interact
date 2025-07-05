@@ -4,7 +4,6 @@ import html
 
 st.set_page_config(page_title="TALKENTREPRISE", page_icon="💬", layout="centered")
 
-# --- CSS Apple-style, arrondi partout, word-break pour adresse, TotalResult discret ---
 st.markdown("""
 <style>
 body, html, [class*="css"] {
@@ -31,13 +30,6 @@ body, html, [class*="css"] {
     margin-bottom: 1.0em;
     text-align: center;
 }
-.results-row {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 2.1em;
-    margin-bottom: 1.2em;
-}
 .result-card {
     background: #fff;
     border-radius: 24px;
@@ -52,7 +44,7 @@ body, html, [class*="css"] {
     align-items: flex-start;
     justify-content: flex-start;
     word-break: break-word;
-    margin-bottom: 1em;
+    margin: 0.7em;
 }
 .result-siren {
     font-size: 1.17em;
@@ -99,12 +91,17 @@ body, html, [class*="css"] {
     flex-direction: row;
     align-items: baseline;
 }
+.cards-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+}
 @media (max-width: 1100px) {
-    .results-row { gap: 1.1em;}
     .result-card {min-width: 220px; max-width: 99vw;}
 }
 @media (max-width: 768px) {
-    .results-row { flex-wrap: wrap; gap: 0.8em;}
+    .cards-row { flex-wrap: wrap;}
     .result-card {min-width: 94vw; max-width: 99vw;}
 }
 </style>
@@ -149,7 +146,6 @@ def send_and_clear():
             resp = requests.post(webhook_url, json={"query": user_input}, timeout=15)
             try:
                 data = resp.json()
-                # Prend en compte le format enveloppé de ta réponse
                 if isinstance(data, list) and "results" in data[0]:
                     res_list = data[0]["results"]
                     total = data[0].get("total_results", len(res_list))
@@ -159,7 +155,6 @@ def send_and_clear():
                 else:
                     res_list = []
                     total = 0
-                # Toujours max 5 résultats affichés
                 st.session_state.results = [extract_info(r) for r in res_list[:5]]
                 st.session_state.total_results = total
             except Exception:
@@ -172,18 +167,17 @@ def send_and_clear():
 
 st.text_input("", key="input_text", label_visibility="collapsed", on_change=send_and_clear)
 
-# Texte TotalResult très discret
 if st.session_state.total_results:
     st.markdown(
         f'<div class="totalresult-text">TotalResult {st.session_state.total_results}</div>',
         unsafe_allow_html=True
     )
 
-# Affichage des résultats en ligne, flex, centrés, adresse word-break, aucune balise visible
+# Affichage : une carte = un seul st.markdown, toutes dans une row
 if st.session_state.results:
-    cards_html = '<div class="results-row">'
+    st.markdown('<div class="cards-row">', unsafe_allow_html=True)
     for info in st.session_state.results:
-        cards_html += f"""
+        card_html = f"""
         <div class="result-card">
             <div class="result-siren">{safe_escape(info['siren'])}</div>
             <div class="result-title">{safe_escape(info['nom'])}</div>
@@ -193,5 +187,5 @@ if st.session_state.results:
             <div class="result-line"><span class="result-label">Date création</span><span class="result-value">{safe_escape(info['date_creation'])}</span></div>
         </div>
         """
-    cards_html += '</div>'
-    st.markdown(cards_html, unsafe_allow_html=True)
+        st.markdown(card_html, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
