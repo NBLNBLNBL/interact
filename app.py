@@ -4,7 +4,7 @@ import time
 
 st.set_page_config(page_title="TALK ENTERPRISE", page_icon="💬", layout="centered")
 
-# CSS ultra minimaliste et design
+# CSS minimaliste et design (champ, bouton, switches)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200&display=swap');
@@ -58,6 +58,30 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(38,132,255,0.13);
         background: #fafdff;
     }
+    .cent-btn {
+        border: none;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #7b61ff 0%, #2684FF 100%);
+        color: #fff;
+        width: 44px;
+        height: 44px;
+        margin-left: 0.5em;
+        margin-bottom: 0.18em;
+        box-shadow: 0 2px 18px rgba(124,97,255,0.13);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Avenir Next', 'AvenirNext', 'Montserrat', Arial, sans-serif !important;
+        font-size: 1.03rem !important;
+        letter-spacing: 0.16em;
+        font-weight: 200 !important;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .cent-btn:hover {
+        background: linear-gradient(135deg, #5e45c8 0%, #1668c1 100%);
+    }
     .stChatMessage {
         background: #fafbfc;
         border-radius: 18px;
@@ -96,45 +120,12 @@ st.markdown("""
         user-select: none;
         margin-left: 0.45em;
     }
-    .send-btn-float {
-        position: fixed;
-        bottom: 34px;
-        right: 38px;
-        z-index: 99;
-    }
-    .send-fab-btn {
-        border: none;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #7b61ff 0%, #2684FF 100%);
-        color: #fff;
-        width: 40px;
-        height: 40px;
-        box-shadow: 0 2px 18px rgba(124,97,255,0.19);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.15s;
-        cursor: pointer;
-        font-size: 1.22rem;
-        outline: none !important;
-    }
-    .send-fab-btn:hover {
-        background: linear-gradient(135deg, #5e45c8 0%, #1668c1 100%);
-    }
-    .send-fab-btn svg {
-        width: 19px;
-        height: 19px;
-        display: block;
-        margin: auto;
-        margin-top: 0;
-        margin-left: 1px;
-    }
     </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="talk-title">T A L K &nbsp; E N T E R P R I S E</div>', unsafe_allow_html=True)
 
-# Persistance des settings avec st.session_state
+# Persistance des switches
 if "auto_send" not in st.session_state:
     st.session_state.auto_send = False
 if "enter_send" not in st.session_state:
@@ -143,34 +134,10 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "last_input" not in st.session_state:
     st.session_state.last_input = ""
-if "input_time" not in st.session_state:
-    st.session_state.input_time = 0
-
-# JS pour persister les switches (via localStorage)
-st.markdown("""
-<script>
-(function(){
-    const keyAuto = "talk_ent_auto_send";
-    const keyEnter = "talk_ent_enter_send";
-    // On load, set state from localStorage (Streamlit reloads may lose state otherwise)
-    window.addEventListener("DOMContentLoaded", () => {
-        const autoSend = localStorage.getItem(keyAuto) === "true";
-        const enterSend = localStorage.getItem(keyEnter) !== "false";
-        window.parent.postMessage({type: "streamlit:setComponentValue", key: "auto_send", value: autoSend}, "*");
-        window.parent.postMessage({type: "streamlit:setComponentValue", key: "enter_send", value: enterSend}, "*");
-    });
-    // On change, monitor inputs
-    window.addEventListener("input", e => {
-        if(e.target.id && e.target.id.includes("auto-send")) {
-            localStorage.setItem(keyAuto, e.target.checked);
-        }
-        if(e.target.id && e.target.id.includes("enter-send")) {
-            localStorage.setItem(keyEnter, e.target.checked);
-        }
-    });
-})();
-</script>
-""", unsafe_allow_html=True)
+if "auto_send_timer" not in st.session_state:
+    st.session_state.auto_send_timer = None
+if "last_edit_time" not in st.session_state:
+    st.session_state.last_edit_time = 0
 
 # Affichage historique
 for m in st.session_state.messages:
@@ -185,15 +152,7 @@ for m in st.session_state.messages:
 # Label ultra fin au-dessus du champ
 st.markdown('<span class="talk-label">TAPEZ VOTRE MESSAGE</span>', unsafe_allow_html=True)
 
-# Champ texte custom (sans placeholder)
-user_input = st.text_input(
-    "",
-    value=st.session_state.last_input,
-    key="talk_input",
-    label_visibility="collapsed",
-)
-
-# Bar switches
+# Barres switches
 col1, col2 = st.columns([1, 1])
 with col1:
     auto_send = st.checkbox(
@@ -210,27 +169,12 @@ with col2:
         help="Envoi du message avec entrée.",
     )
 
-# Mémorise dans session_state & localStorage
 st.session_state.auto_send = auto_send
 st.session_state.enter_send = enter_send
 
-# Timer pour auto-send
-def auto_send_trigger():
-    if st.session_state.auto_send and st.session_state.last_input.strip():
-        now = time.time()
-        if now - st.session_state.input_time > 3:
-            return True
-    return False
-
-# Listen for input changes
-if user_input != st.session_state.last_input:
-    st.session_state.last_input = user_input
-    st.session_state.input_time = time.time()
-
-# Envoi message
-def send_message():
-    msg = st.session_state.last_input.strip()
-    if not msg:
+# Fonction d'envoi
+def send_message(msg):
+    if not msg.strip():
         return
     st.session_state.messages.append({"role": "Vous", "content": msg})
     st.session_state.last_input = ""
@@ -249,41 +193,45 @@ def send_message():
         output = f"Erreur de connexion : {e}"
     st.session_state.messages.append({"role": "Jessica", "content": output})
 
-# Enter-send: on submit
+# Barre de saisie + bouton "CENT" si enter_send désactivé
+c1, c2 = st.columns([17, 2])
+with c1:
+    # Champ texte sans placeholder, style custom
+    user_input = st.text_input(
+        "",
+        value=st.session_state.last_input,
+        key="talk_input",
+        label_visibility="collapsed"
+    )
+with c2:
+    cent_clicked = False
+    if not st.session_state.enter_send:
+        cent_clicked = st.button("CENT", key="cent-btn", help="Envoyer", type="primary")
+        # Style bouton via CSS déjà inclus
+
+# Gestion des interactions
+
+# Quand saisie change, reset le timer
+if user_input != st.session_state.last_input:
+    st.session_state.last_input = user_input
+    st.session_state.last_edit_time = time.time()
+
+# Si Enter-send activé, on envoie sur Entrée
 if st.session_state.enter_send:
-    # Utilise le comportement natif de Streamlit (Enter pour submit)
-    form = st.form("form_enter_send", clear_on_submit=True)
-    with form:
-        form_input = st.text_input(
-            "",
-            value=st.session_state.last_input,
-            key="talk_input_form",
-            label_visibility="collapsed"
-        )
-        submitted = st.form_submit_button("SEND")
-    if submitted and form_input.strip():
-        st.session_state.last_input = form_input
-        send_message()
+    if user_input != "" and user_input != st.session_state.get("sent_input", "") and st.session_state.last_input == "":
+        # Message envoyé via Entrée (car le champ est vidé par st.text_input)
+        send_message(user_input)
+        st.session_state.sent_input = user_input
         st.experimental_rerun()
-    elif auto_send_trigger():
-        send_message()
-        st.experimental_rerun()
-else:
-    # Affiche le bouton d'envoi violet, bas droite
-    if auto_send_trigger():
-        send_message()
-        st.experimental_rerun()
-    st.markdown("""
-    <div class="send-btn-float">
-        <form action="#" method="post">
-            <button class="send-fab-btn" name="sendbtn" type="submit" title="Envoyer">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M12 4L12 20M12 4L6 10M12 4L18 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </button>
-        </form>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.session_state.get("sendbtn") or st.session_state.get("sendbtn_clicked"):
-        send_message()
+# Si Enter-send désactivé, bouton CENT
+elif cent_clicked and st.session_state.last_input.strip():
+    send_message(st.session_state.last_input)
+    st.session_state.sent_input = st.session_state.last_input
+    st.experimental_rerun()
+# Auto-send (inactivity 3s après dernière frappe)
+elif st.session_state.auto_send and st.session_state.last_input.strip():
+    now = time.time()
+    if now - st.session_state.last_edit_time > 3:
+        send_message(st.session_state.last_input)
+        st.session_state.sent_input = st.session_state.last_input
         st.experimental_rerun()
