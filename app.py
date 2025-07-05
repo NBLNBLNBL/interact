@@ -5,12 +5,12 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="TALKENTREPRISE", page_icon="💬", layout="centered")
 
-# Vous pouvez ajuster la variable ci-dessous pour vos styles CSS personnalisés.
+# CSS personnalisé avec défilement vertical et arrière-plan blanc pour le conteneur
 html_style = """
 <style>
 body, html, [class*="css"] {
     font-family: 'Avenir Next', Arial, sans-serif !important;
-    background: #f9f9fb !important;
+    background: #ffffff !important;  /* Tout blanc */
     margin: 0;
     padding: 0;
 }
@@ -21,6 +21,7 @@ body, html, [class*="css"] {
     text-align: center;
     margin: 1rem 0 1.2rem 0;
     text-transform: uppercase;
+    color: #000;  /* en noir */
 }
 .totalresult-text {
     font-size: 0.97em;
@@ -30,36 +31,41 @@ body, html, [class*="css"] {
     text-align: center;
     margin-bottom: 1rem;
 }
-.cards-row-scroll {
+.input-container {
+    text-align: center;
+    margin-bottom: 1.2rem;
+}
+.cards-container {
     display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    justify-content: center;
-    overflow-x: auto;
+    flex-direction: column;         /* Passage en défilement vertical */
     gap: 1.5em;
-    padding: 0 0.5em;
+    max-height: 500px;              /* Ajustez selon vos besoins */
+    overflow-y: auto;
+    padding: 0 1rem;
+    margin-bottom: 1.2rem;
 }
-.cards-row-scroll::-webkit-scrollbar {
-    height: 8px;
-    background: #f9f9fb;
+.cards-container::-webkit-scrollbar {
+    width: 8px;
+    background: #ffffff;
 }
-.cards-row-scroll::-webkit-scrollbar-thumb {
+.cards-container::-webkit-scrollbar-thumb {
     background: #ececf3;
     border-radius: 8px;
 }
 .result-card {
     background: #fff;
     border-radius: 24px;
-    box-shadow: 0 4px 24px 0 rgba(30,30,68,0.08), 0 1.5px 4px #ececf3;
+    box-shadow: 0 4px 24px rgba(30,30,68,0.08), 0 1.5px 4px #ececf3;
     padding: 22px 26px 18px 26px;
     min-width: 320px;
-    width: max-content;
+    width: 100%;
     max-width: 95vw;
     border: 1px solid #f2f2f6;
     display: flex;
     flex-direction: column;
     word-break: break-word;
     position: relative;
+    margin: 0 auto;
 }
 .result-header-row {
     display: flex;
@@ -118,12 +124,10 @@ body, html, [class*="css"] {
     align-items: baseline;
 }
 @media (max-width: 1100px) {
-    .cards-row-scroll { gap: 1em; }
     .result-card { min-width: 180px; max-width: 98vw; }
     .result-value { max-width: 70vw; }
 }
 @media (max-width: 768px) {
-    .cards-row-scroll { gap: 0.7em; }
     .result-card { min-width: 89vw; max-width: 99vw; }
     .result-value { max-width: 70vw; }
 }
@@ -186,22 +190,23 @@ def send_and_clear():
             st.session_state.total_results = 0
     st.session_state.input_text = ""
 
+# Place la barre de recherche sous le titre (sans subgroupes gris, fond blanc)
+st.markdown('<div class="titre">TALKENTREPRISE</div>', unsafe_allow_html=True)
 st.text_input("", key="input_text", label_visibility="collapsed", on_change=send_and_clear)
 
-# Construction de l'ensemble du HTML pour l'UI des cartes
+# Construction du HTML pour les cartes dans un conteneur vertical scrollable
 cards_html = f"""
 <html>
 <head>
 {html_style}
 </head>
 <body>
-<div class="titre">TALKENTREPRISE</div>
 """
 if st.session_state.total_results:
     cards_html += f'<div class="totalresult-text">TotalResult {st.session_state.total_results}</div>'
 
 if st.session_state.results:
-    cards_html += '<div class="cards-row-scroll">'
+    cards_html += '<div class="cards-container">'
     for idx, info in enumerate(st.session_state.results):
         cards_html += f"""
         <div class="result-card">
