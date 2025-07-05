@@ -1,13 +1,16 @@
 import streamlit as st
 import requests
+import html
 
 st.set_page_config(page_title="TALKENTREPRISE", page_icon="💬", layout="centered")
 
-# Apple-style CSS pour vignettes larges, alignées, TotalResult discret
+# Apple-style CSS : arrondi partout, word-break pour adresse, TotalResult discret
 st.markdown("""
 <style>
 body, html, [class*="css"] {
     font-family: 'Avenir Next', Arial, sans-serif !important;
+    border-radius: 24px !important;
+    background: #f9f9fb !important;
 }
 .titre {
     font-family: 'Avenir Next', Arial, sans-serif !important;
@@ -36,18 +39,20 @@ body, html, [class*="css"] {
     margin-bottom: 1.2em;
 }
 .result-card {
-    background: #f9f9fb;
+    background: #fff;
     border-radius: 24px;
     box-shadow: 0 4px 24px 0 rgba(30,30,68,0.08), 0 1.5px 4px #ececf3;
     padding: 30px 34px 26px 34px;
-    min-width: 320px;
-    max-width: 380px;
-    min-height: 180px;
+    min-width: 300px;
+    max-width: 370px;
+    min-height: 190px;
     border: 1px solid #f2f2f6;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
+    word-break: break-word;
+    margin-bottom: 1em;
 }
 .result-siren {
     font-size: 1.17em;
@@ -84,7 +89,9 @@ body, html, [class*="css"] {
     letter-spacing: 0.02em;
     display: inline-block;
     vertical-align: top;
-    white-space: nowrap;
+    word-break: break-word;
+    white-space: normal !important;
+    max-width: 220px;
 }
 .result-line {
     margin-bottom: 0.31em;
@@ -94,11 +101,11 @@ body, html, [class*="css"] {
 }
 @media (max-width: 1100px) {
     .results-row { gap: 1.1em;}
-    .result-card {min-width: 260px; max-width: 99vw;}
+    .result-card {min-width: 220px; max-width: 99vw;}
 }
 @media (max-width: 768px) {
     .results-row { flex-wrap: wrap; gap: 0.8em;}
-    .result-card {min-width: 96vw; max-width: 99vw;}
+    .result-card {min-width: 94vw; max-width: 99vw;}
 }
 </style>
 """, unsafe_allow_html=True)
@@ -169,18 +176,18 @@ if st.session_state.total_results:
         unsafe_allow_html=True
     )
 
-# Affichage des résultats en ligne, flex, centrés, adresse sur une seule ligne, aucune balise visible
+# Affichage des résultats en ligne, flex, centrés, adresse word-break, aucune balise visible
 if st.session_state.results:
     cards_html = '<div class="results-row">'
     for info in st.session_state.results:
         cards_html += f"""
         <div class="result-card">
-            <div class="result-siren">{info['siren']}</div>
-            <div class="result-title">{info['nom']}</div>
-            <div class="result-line"><span class="result-label">Dirigeant</span><span class="result-value">{info['dirigeant']}</span></div>
-            <div class="result-line"><span class="result-label">Adresse</span><span class="result-value">{info['adresse']}</span></div>
-            <div class="result-line"><span class="result-label">Catégorie</span><span class="result-value">{info['categorie']}</span></div>
-            <div class="result-line"><span class="result-label">Date création</span><span class="result-value">{info['date_creation']}</span></div>
+            <div class="result-siren">{html.escape(info['siren'])}</div>
+            <div class="result-title">{html.escape(info['nom'])}</div>
+            <div class="result-line"><span class="result-label">Dirigeant</span><span class="result-value">{html.escape(info['dirigeant'])}</span></div>
+            <div class="result-line"><span class="result-label">Adresse</span><span class="result-value">{html.escape(info['adresse'])}</span></div>
+            <div class="result-line"><span class="result-label">Catégorie</span><span class="result-value">{html.escape(info['categorie'])}</span></div>
+            <div class="result-line"><span class="result-label">Date création</span><span class="result-value">{html.escape(info['date_creation'])}</span></div>
         </div>
         """
     cards_html += '</div>'
