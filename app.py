@@ -1,8 +1,8 @@
 import streamlit as st
+import requests
 
 st.set_page_config(page_title="TALK ENTREPRISE", page_icon="💬", layout="centered")
 
-# CSS pour police et bouton en bas à gauche
 st.markdown("""
 <style>
 body, html, [class*="css"] {
@@ -35,7 +35,7 @@ body, html, [class*="css"] {
     background: #fff;
     border-radius: 14px;
     border: 1px solid #f0f0f0;
-    min-height: 170px;
+    min-height: 40px;
     max-height: 340px;
     overflow-y: auto;
     padding: 16px 10px 10px 10px;
@@ -59,22 +59,37 @@ st.markdown('<div style="font-family:Avenir Next, Arial, sans-serif; font-size:2
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Affichage historique dans un cadre blanc discret
-st.markdown('<div class="chat-history">', unsafe_allow_html=True)
-for msg in st.session_state.messages:
-    who = "vous" if msg["role"] == "user" else "assistant"
-    st.markdown(
-        f'<span style="font-size:0.93em; color:#7b61ff; font-weight:200; letter-spacing:0.13em;">{who}</span> : '
-        f'<span style="font-size:1.04em; color:#222; font-weight:200;">{msg["content"]}</span>',
-        unsafe_allow_html=True
-    )
-st.markdown('</div>', unsafe_allow_html=True)
+# Affichage historique UNIQUEMENT si messages
+if st.session_state.messages:
+    st.markdown('<div class="chat-history">', unsafe_allow_html=True)
+    for msg in st.session_state.messages:
+        who = "vous" if msg["role"] == "user" else "assistant"
+        st.markdown(
+            f'<span style="font-size:0.93em; color:#7b61ff; font-weight:200; letter-spacing:0.13em;">{who}</span> : '
+            f'<span style="font-size:1.04em; color:#222; font-weight:200;">{msg["content"]}</span>',
+            unsafe_allow_html=True
+        )
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Input sans placeholder
 user_input = st.text_input("", key="input_text", label_visibility="collapsed")
 if user_input:
+    # Ajoute le message utilisateur
     st.session_state.messages.append({"role": "user", "content": user_input})
-    st.session_state.input_text = ""
+    # Appel webhook
+    webhook_url = "https://leroux.app.n8n.cloud/webhook/dd642072-9735-4406-90c7-5a7a8a7ab9ea"
+    try:
+        resp = requests.post(webhook_url, json={"query": user_input}, timeout=10)
+        try:
+            data = resp.json()
+            reply = data.get("reply") or data.get("response") or resp.text
+        except Exception:
+            reply = resp.text
+    except Exception:
+        reply = "Jessica n'a pas pu recevoir votre message."
+    st.session_state.messages.append({"role": "assistant", "content": reply})
+    # SUPPRIME cette ligne qui pose erreur
+    # st.session_state.input_text = ""
 
 # Ligne du bas : bouton effacer à gauche
 col1, col2 = st.columns([1, 9])
