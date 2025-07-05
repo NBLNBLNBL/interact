@@ -4,7 +4,7 @@ import html
 
 st.set_page_config(page_title="TALKENTREPRISE", page_icon="💬", layout="centered")
 
-# Apple-style CSS : arrondi partout, word-break pour adresse, TotalResult discret
+# --- CSS Apple-style, arrondi partout, word-break pour adresse, TotalResult discret ---
 st.markdown("""
 <style>
 body, html, [class*="css"] {
@@ -117,6 +117,9 @@ if "results" not in st.session_state:
 if "total_results" not in st.session_state:
     st.session_state.total_results = 0
 
+def safe_escape(val):
+    return html.escape(str(val)) if val is not None else ""
+
 def extract_info(result):
     siren = result.get("siren", "")
     nom = result.get("nom_complet", "") or result.get("nom_raison_sociale", "")
@@ -182,12 +185,12 @@ if st.session_state.results:
     for info in st.session_state.results:
         cards_html += f"""
         <div class="result-card">
-            <div class="result-siren">{html.escape(info['siren'])}</div>
-            <div class="result-title">{html.escape(info['nom'])}</div>
-            <div class="result-line"><span class="result-label">Dirigeant</span><span class="result-value">{html.escape(info['dirigeant'])}</span></div>
-            <div class="result-line"><span class="result-label">Adresse</span><span class="result-value">{html.escape(info['adresse'])}</span></div>
-            <div class="result-line"><span class="result-label">Catégorie</span><span class="result-value">{html.escape(info['categorie'])}</span></div>
-            <div class="result-line"><span class="result-label">Date création</span><span class="result-value">{html.escape(info['date_creation'])}</span></div>
+            <div class="result-siren">{safe_escape(info['siren'])}</div>
+            <div class="result-title">{safe_escape(info['nom'])}</div>
+            <div class="result-line"><span class="result-label">Dirigeant</span><span class="result-value">{safe_escape(info['dirigeant'])}</span></div>
+            <div class="result-line"><span class="result-label">Adresse</span><span class="result-value">{safe_escape(info['adresse'])}</span></div>
+            <div class="result-line"><span class="result-label">Catégorie</span><span class="result-value">{safe_escape(info['categorie'])}</span></div>
+            <div class="result-line"><span class="result-label">Date création</span><span class="result-value">{safe_escape(info['date_creation'])}</span></div>
         </div>
         """
     cards_html += '</div>'
