@@ -3,7 +3,7 @@ import requests
 
 st.set_page_config(page_title="TALKENTREPRISE", page_icon="💬", layout="centered")
 
-# CSS : tout Avenir Next, tout en majuscules
+# CSS tout en majuscules, police Avenir Next
 st.markdown("""
 <style>
 body, html, [class*="css"] {
@@ -35,13 +35,17 @@ body, html, [class*="css"] {
 # Titre
 st.markdown('<div class="titre">TALKENTREPRISE</div>', unsafe_allow_html=True)
 
-# Zone de texte : envoi au webhook à "enter", pas de bouton
-user_input = st.text_input("", key="input_text", label_visibility="collapsed")
-
-if user_input:
-    webhook_url = "https://leroux.app.n8n.cloud/webhook/dd642072-9735-4406-90c7-5a7a8a7ab9ea"
-    try:
-        requests.post(webhook_url, json={"query": user_input}, timeout=10)
-    except Exception:
-        pass
+# Fonction appelée à chaque "Entrée"
+def send_and_clear():
+    user_input = st.session_state.input_text
+    if user_input.strip():
+        webhook_url = "https://leroux.app.n8n.cloud/webhook/dd642072-9735-4406-90c7-5a7a8a7ab9ea"
+        try:
+            requests.post(webhook_url, json={"query": user_input}, timeout=10)
+        except Exception:
+            pass
+    # On efface ici, dans le callback, c'est sûr et sans bug
     st.session_state.input_text = ""
+
+# Zone de texte, reliée au callback
+st.text_input("", key="input_text", label_visibility="collapsed", on_change=send_and_clear)
