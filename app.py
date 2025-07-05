@@ -3,7 +3,7 @@ import requests
 
 st.set_page_config(page_title="TALK ENTERPRISE", page_icon="💬", layout="centered")
 
-# Inject custom CSS for Avenir Next, titres en majuscules, espacement lettres, bouton stylé
+# CSS pour Avenir Next, majuscules, lettres espacées, bouton bleu rond moderne
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200&display=swap');
@@ -29,6 +29,7 @@ st.markdown("""
         font-family: 'Avenir Next', 'AvenirNext', 'Montserrat', Arial, sans-serif !important;
         font-weight: 200 !important;
         font-size: 1.16rem;
+        text-transform: uppercase;
         letter-spacing: 0.08em;
         border-radius: 30px 0 0 30px !important;
         border: none !important;
@@ -48,22 +49,30 @@ st.markdown("""
     .send-btn button {
         border: none !important;
         border-radius: 50% !important;
-        background: #f6f6f8 !important;
-        color: #222 !important;
-        font-size: 1.38rem !important;
-        width: 38px !important;
-        height: 38px !important;
+        background: #2684FF !important;
+        color: #fff !important;
+        width: 40px !important;
+        height: 40px !important;
         margin-left: -45px !important;
         margin-top: 1px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        box-shadow: 0 2px 8px rgba(38,132,255,0.17);
         display: flex !important;
         align-items: center;
         justify-content: center;
         transition: background 0.2s;
         cursor: pointer;
+        font-size: 1.5rem !important;
+        position: relative;
     }
     .send-btn button:hover {
-        background: #e9e9ef !important;
+        background: #1668c1 !important;
+    }
+    .send-btn svg {
+        display: block;
+        margin: auto;
+        width: 22px;
+        height: 22px;
+        margin-top: 2px;
     }
     .stChatMessage {
         background: #fafbfc;
@@ -101,45 +110,43 @@ for m in st.session_state.messages:
         unsafe_allow_html=True
     )
 
-# Formulaire en ligne (input + bouton rond)
+# Formulaire en ligne (input + bouton rond bleu moderne)
 with st.form("chat_form", clear_on_submit=True):
     col1, col2 = st.columns([15, 1])
     with col1:
         user_input = st.text_input(
             "",
-            placeholder="T A P E Z &nbsp; V O T R E &nbsp; M E S S A G E...",
+            placeholder="TAPEZ VOTRE MESSAGE",
             key="input"
         )
     with col2:
+        # Le bouton "Envoyer" très discret, rond, bleu, icône SVG (paper plane)
         submit = st.form_submit_button(
             "",
-            help="Envoyer",
-            type="primary"
+            help="Envoyer"
         )
-        # Custom icon in button (paper plane unicode)
         st.markdown(
             """
             <style>
-            [data-testid="stFormSubmitButton"] button:after {
-                content: '\\1F4E7';
-                font-size: 1.3em;
-                position: relative;
-                left: -2px;
-                top: 2px;
+            [data-testid="stFormSubmitButton"] button {
+                padding: 0 !important;
             }
             </style>
+            <div class="send-btn">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M3 20L21 12L3 4V10L17 12L3 14V20Z" fill="white"/>
+                </svg>
+            </div>
             """,
             unsafe_allow_html=True
         )
 
-# Gestion de l'envoi (pas de rerun)
 if submit and user_input.strip():
     st.session_state.messages.append({"role": "Vous", "content": user_input})
     try:
         webhook_url = "https://leroux.app.n8n.cloud/webhook/dd642072-9735-4406-90c7-5a7a8a7ab9ea"
         response = requests.post(webhook_url, json={"query": user_input}, timeout=10)
         if response.status_code == 200:
-            # On accepte "reply" ou texte brut
             try:
                 data = response.json()
                 output = data.get("reply") or data.get("response") or str(data)
