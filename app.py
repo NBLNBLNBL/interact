@@ -1,47 +1,43 @@
 import streamlit as st
 import requests
 import html
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="TALKENTREPRISE", page_icon="💬", layout="centered")
 
-st.markdown("""
+# Vous pouvez ajuster la variable ci-dessous pour vos styles CSS personnalisés.
+html_style = """
 <style>
 body, html, [class*="css"] {
     font-family: 'Avenir Next', Arial, sans-serif !important;
-    border-radius: 24px !important;
     background: #f9f9fb !important;
+    margin: 0;
+    padding: 0;
 }
 .titre {
-    font-family: 'Avenir Next', Arial, sans-serif !important;
     font-size: 2.1rem;
     letter-spacing: 0.23em;
     font-weight: 200;
     text-align: center;
-    margin-bottom: 1.2em;
-    margin-top: 0.9em;
+    margin: 1rem 0 1.2rem 0;
     text-transform: uppercase;
 }
 .totalresult-text {
-    font-family: 'Avenir Next', Arial, sans-serif !important;
     font-size: 0.97em;
     font-weight: 200;
     color: #b6b6c2;
     letter-spacing: 0.07em;
-    margin-bottom: 1.0em;
     text-align: center;
+    margin-bottom: 1rem;
 }
 .cards-row-scroll {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
+    justify-content: center;
     overflow-x: auto;
     gap: 1.5em;
-    margin-bottom: 1.2em;
-    padding-bottom: 0.5em;
-    padding-left: 0.1em;
-    padding-right: 0.1em;
-    scrollbar-width: thin;
-    scrollbar-color: #ececf3 #f9f9fb;
+    padding: 0 0.5em;
 }
 .cards-row-scroll::-webkit-scrollbar {
     height: 8px;
@@ -62,18 +58,14 @@ body, html, [class*="css"] {
     border: 1px solid #f2f2f6;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
     word-break: break-word;
-    margin-bottom: 1em;
     position: relative;
 }
 .result-header-row {
-    width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 0.11em;
+    margin-bottom: 0.2em;
 }
 .result-siren {
     font-size: 1.11em;
@@ -81,28 +73,22 @@ body, html, [class*="css"] {
     color: #7b61ff;
     letter-spacing: 0.11em;
     text-transform: uppercase;
-    font-family: 'Avenir Next', Arial, sans-serif !important;
 }
 .result-index {
-    font-family: 'Avenir Next', Arial, sans-serif !important;
     font-size: 0.99em;
     color: #b6b6c2;
     font-weight: 200;
     letter-spacing: 0.07em;
     text-align: right;
-    margin-left: 1em;
     white-space: nowrap;
-    pointer-events: none;
-    user-select: none;
 }
 .result-title {
     font-size: 1.08em;
     font-weight: 600;
     color: #2d2d52;
-    margin-bottom: 0.13em;
+    margin-bottom: 0.2em;
     text-transform: uppercase;
     letter-spacing: 0.07em;
-    font-family: 'Avenir Next', Arial, sans-serif !important;
 }
 .result-label {
     font-size: 0.85em;
@@ -114,7 +100,6 @@ body, html, [class*="css"] {
     display: inline-block;
     min-width: 78px;
     vertical-align: top;
-    font-family: 'Avenir Next', Arial, sans-serif !important;
 }
 .result-value {
     font-size: 1.02em;
@@ -124,46 +109,26 @@ body, html, [class*="css"] {
     display: inline-block;
     vertical-align: top;
     word-break: break-word;
-    white-space: normal !important;
-    min-width: 30px;
+    white-space: normal;
     max-width: 340px;
-    font-family: 'Avenir Next', Arial, sans-serif !important;
 }
 .result-line {
     margin-bottom: 0.18em;
     display: flex;
-    flex-direction: row;
     align-items: baseline;
 }
-.stTextInput>div>input {
-    font-family: 'Avenir Next', Arial, sans-serif !important;
-    font-size: 1.07em;
-    font-weight: 200 !important;
-    color: #7b7b98 !important;
-    background: #f9f9fb !important;
-    border-radius: 18px !important;
-    border: 1.2px solid #e4e4f5 !important;
-    padding: 0.7em 1.1em !important;
-}
 @media (max-width: 1100px) {
-    .cards-row-scroll { gap: 1em;}
-    .result-card {min-width: 180px; max-width: 98vw;}
-    .result-value {max-width: 70vw;}
+    .cards-row-scroll { gap: 1em; }
+    .result-card { min-width: 180px; max-width: 98vw; }
+    .result-value { max-width: 70vw; }
 }
 @media (max-width: 768px) {
-    .cards-row-scroll { gap: 0.7em;}
-    .result-card {min-width: 89vw; max-width: 99vw;}
-    .result-value {max-width: 70vw;}
+    .cards-row-scroll { gap: 0.7em; }
+    .result-card { min-width: 89vw; max-width: 99vw; }
+    .result-value { max-width: 70vw; }
 }
 </style>
-""", unsafe_allow_html=True)
-
-st.markdown('<div class="titre">TALKENTREPRISE</div>', unsafe_allow_html=True)
-
-if "results" not in st.session_state:
-    st.session_state.results = []
-if "total_results" not in st.session_state:
-    st.session_state.total_results = 0
+"""
 
 def safe_escape(val):
     return html.escape(str(val)) if val is not None else ""
@@ -178,7 +143,7 @@ def extract_info(result):
     dirigeant = ""
     if dirigeants:
         d = dirigeants[0]
-        dirigeant = (d.get("denomination") or d.get("nom") or "") + (" (" + d.get("qualite") + ")" if d.get("qualite") else "")
+        dirigeant = (d.get("denomination") or d.get("nom") or "") + (f" ({d.get('qualite')})" if d.get("qualite") else "")
     date_creation = result.get("date_creation", "")
     return {
         "siren": siren,
@@ -188,6 +153,11 @@ def extract_info(result):
         "dirigeant": dirigeant,
         "date_creation": date_creation,
     }
+
+if "results" not in st.session_state:
+    st.session_state.results = []
+if "total_results" not in st.session_state:
+    st.session_state.total_results = 0
 
 def send_and_clear():
     user_input = st.session_state.input_text
@@ -216,17 +186,22 @@ def send_and_clear():
             st.session_state.total_results = 0
     st.session_state.input_text = ""
 
-# Barre de recherche toujours visible
 st.text_input("", key="input_text", label_visibility="collapsed", on_change=send_and_clear)
 
+# Construction de l'ensemble du HTML pour l'UI des cartes
+cards_html = f"""
+<html>
+<head>
+{html_style}
+</head>
+<body>
+<div class="titre">TALKENTREPRISE</div>
+"""
 if st.session_state.total_results:
-    st.markdown(
-        f'<div class="totalresult-text">TotalResult {st.session_state.total_results}</div>',
-        unsafe_allow_html=True
-    )
+    cards_html += f'<div class="totalresult-text">TotalResult {st.session_state.total_results}</div>'
 
 if st.session_state.results:
-    cards_html = '<div class="cards-row-scroll">'
+    cards_html += '<div class="cards-row-scroll">'
     for idx, info in enumerate(st.session_state.results):
         cards_html += f"""
         <div class="result-card">
@@ -235,11 +210,26 @@ if st.session_state.results:
                 <span class="result-index">Résultat {idx+1}</span>
             </div>
             <div class="result-title">{safe_escape(info['nom'])}</div>
-            <div class="result-line"><span class="result-label">Dirigeant</span><span class="result-value">{safe_escape(info['dirigeant'])}</span></div>
-            <div class="result-line"><span class="result-label">Adresse</span><span class="result-value">{safe_escape(info['adresse'])}</span></div>
-            <div class="result-line"><span class="result-label">Catégorie</span><span class="result-value">{safe_escape(info['categorie'])}</span></div>
-            <div class="result-line"><span class="result-label">Date création</span><span class="result-value">{safe_escape(info['date_creation'])}</span></div>
+            <div class="result-line">
+                <span class="result-label">Dirigeant</span>
+                <span class="result-value">{safe_escape(info['dirigeant'])}</span>
+            </div>
+            <div class="result-line">
+                <span class="result-label">Adresse</span>
+                <span class="result-value">{safe_escape(info['adresse'])}</span>
+            </div>
+            <div class="result-line">
+                <span class="result-label">Catégorie</span>
+                <span class="result-value">{safe_escape(info['categorie'])}</span>
+            </div>
+            <div class="result-line">
+                <span class="result-label">Date création</span>
+                <span class="result-value">{safe_escape(info['date_creation'])}</span>
+            </div>
         </div>
         """
     cards_html += '</div>'
-    st.markdown(cards_html, unsafe_allow_html=True)
+cards_html += "</body></html>"
+
+# Intégration du HTML via st.components.html
+components.html(cards_html, height=600)
