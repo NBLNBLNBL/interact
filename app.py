@@ -3,15 +3,13 @@ import requests
 
 st.set_page_config(page_title="TALK ENTERPRISE", page_icon="💬", layout="centered")
 
-# CSS minimaliste
+# CSS
 st.markdown("""
     <style>
     html, body, [class*="css"]  {
         font-family: 'Avenir Next', Arial, sans-serif !important;
         background: #fff;
         color: #111;
-        font-weight: 200 !important;
-        letter-spacing: 0.01em;
     }
     .talk-title {
         font-size: 2.1rem;
@@ -22,7 +20,6 @@ st.markdown("""
         text-align: center;
         margin-bottom: 1.2em;
         margin-top: 0.6em;
-        user-select: none;
     }
     .talk-label {
         font-size: 0.82rem;
@@ -35,26 +32,24 @@ st.markdown("""
         margin-bottom: 2px;
         margin-top: 12px;
         display: block;
-        user-select: none;
     }
-    .talk-input {
+    .stChatMessage {
+        background: #fafbfc;
+        border-radius: 18px;
+        padding: 12px 16px;
+        margin: 8px 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         font-family: 'Avenir Next', Arial, sans-serif !important;
         font-weight: 200 !important;
-        font-size: 1.13rem;
-        letter-spacing: 0.07em;
-        border-radius: 24px;
-        border: none;
-        background: #f6f6f8;
-        padding: 14px 18px 14px 18px;
-        outline: none;
-        box-shadow: 0 2px 12px rgba(38,132,255,0.07);
-        margin-bottom: 2px;
-        width: 100%;
-        transition: box-shadow 0.2s;
+        letter-spacing: 0.03em;
     }
-    .talk-input:focus {
-        box-shadow: 0 4px 20px rgba(38,132,255,0.13);
-        background: #fafdff;
+    .user-msg {
+        background: #e6f0fa;
+        margin-left: 35%;
+    }
+    .jessica-msg {
+        background: #f5edfa;
+        margin-right: 35%;
     }
     .send-btn {
         border: none;
@@ -80,24 +75,6 @@ st.markdown("""
     .send-btn:hover {
         background: linear-gradient(135deg, #5e45c8 0%, #1668c1 100%);
     }
-    .stChatMessage {
-        background: #fafbfc;
-        border-radius: 18px;
-        padding: 12px 16px;
-        margin: 8px 0;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        font-family: 'Avenir Next', Arial, sans-serif !important;
-        font-weight: 200 !important;
-        letter-spacing: 0.03em;
-    }
-    .user-msg {
-        background: #e6f0fa;
-        margin-left: 35%;
-    }
-    .jessica-msg {
-        background: #f5edfa;
-        margin-right: 35%;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -105,10 +82,8 @@ st.markdown('<div class="talk-title">T A L K &nbsp; E N T E R P R I S E</div>', 
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "input" not in st.session_state:
-    st.session_state.input = ""
 
-# Affichage de l’historique
+# Affichage historique
 for m in st.session_state.messages:
     is_user = (m["role"] == "Vous")
     role_label = "VOUS" if is_user else "JESSICA"
@@ -118,37 +93,30 @@ for m in st.session_state.messages:
         unsafe_allow_html=True
     )
 
-# Label ultra fin au-dessus du champ
+# Label
 st.markdown('<span class="talk-label">TAPEZ VOTRE MESSAGE</span>', unsafe_allow_html=True)
 
-# Barre de saisie + bouton
-c1, c2 = st.columns([17, 2])
-with c1:
-    input_text = st.text_input(
-        "",
-        value=st.session_state.input,
-        key="talk_input",
-        label_visibility="collapsed"
-    )
-with c2:
-    send_btn = st.button("SEND", key="send-btn", help="Envoyer", type="primary")
-
-# Logique d’envoi
-if send_btn and input_text.strip():
-    st.session_state.messages.append({"role": "Vous", "content": input_text})
-    # Appel Webhook – tu peux décommenter la ligne pour renvoyer la vraie réponse
-    webhook_url = "https://leroux.app.n8n.cloud/webhook/dd642072-9735-4406-90c7-5a7a8a7ab9ea"
-    try:
-        resp = requests.post(webhook_url, json={"query": input_text}, timeout=10)
+# Formulaire d'envoi
+with st.form(key="chat_form", clear_on_submit=True):
+    c1, c2 = st.columns([17, 2])
+    with c1:
+        user_input = st.text_input("", value="", key="input_text", label_visibility="collapsed")
+    with c2:
+        send = st.form_submit_button("SEND", use_container_width=True)
+    
+    if send and user_input.strip():
+        # Ajout message utilisateur
+        st.session_state.messages.append({"role": "Vous", "content": user_input})
+        # Envoi webhook
+        webhook_url = "https://leroux.app.n8n.cloud/webhook/dd642072-9735-4406-90c7-5a7a8a7ab9ea"
         try:
-            data = resp.json()
-            reply = data.get("reply") or data.get("response") or resp.text
+            resp = requests.post(webhook_url, json={"query": user_input}, timeout=10)
+            try:
+                data = resp.json()
+                reply = data.get("reply") or data.get("response") or resp.text
+            except Exception:
+                reply = resp.text
         except Exception:
-            reply = resp.text
-    except Exception:
-        reply = "Jessica n'a pas pu recevoir votre message."
-    st.session_state.messages.append({"role": "Jessica", "content": reply})
-    st.session_state.input = ""
-    st.experimental_rerun()
-else:
-    st.session_state.input = input_text
+            reply = "Jessica n'a pas pu recevoir votre message."
+        # Ajout réponse Jessica
+        st.session_state.messages.append({"role": "Jessica", "content": reply})
